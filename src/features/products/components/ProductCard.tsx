@@ -5,7 +5,7 @@ interface ProductCardProps {
   product: Product;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+const ProductCard = ({ product }: ProductCardProps) => {
   return (
     <article className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <Link to={`/products/${product.id}`}>
@@ -40,4 +40,6 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
     </article>
   );
-}
+};
+
+export default ProductCard;

@@ -1,7 +1,7 @@
 import ProductCard from "../components/ProductCard";
 import { products } from "../data/products";
 
-export default function ProductListPage() {
+const ProductListPage = () => {
   return (
     <>
       <section className="bg-indigo-950 px-6 py-20 text-white">
@@ -42,4 +42,6 @@ export default function ProductListPage() {
       </section>
     </>
   );
-}
+};
+
+export default ProductListPage;
