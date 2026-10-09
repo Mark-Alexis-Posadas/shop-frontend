@@ -1,46 +1,75 @@
-# E-commerce client
+# React + TypeScript + Vite
 
-React + TypeScript + Vite frontend.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Development
+Currently, two official plugins are available:
 
-Start the backend from `../server` with `npm run dev` (port 5000), then run `npm run dev` here and open the Vite URL.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## Feature-based structure
+## React Compiler
 
-```text
-src/
-  app/
-    layouts/AppLayout.tsx
-    providers/AppProviders.tsx
-    query-client.ts
-    router.tsx
-  features/
-    home/pages/HomePage.tsx
-    products/
-      api/products.api.ts
-      components/ProductCard.tsx
-      hooks/use-products.ts
-      pages/ProductsPage.tsx
-      types.ts
-  shared/
-    components/
-    stores/ui-store.ts
-    styles/index.css
-  assets/
-  main.tsx
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+
 ```
 
-- `app`: application setup, providers, routing, and layouts.
-- `features`: keep a feature's pages, API calls, hooks, components, and types together. Add auth, cart, and orders here when implemented.
-- `shared`: reusable UI and utilities that do not depend on a specific feature. Shared code should not import feature modules.
-- TanStack Query owns server data; Zustand owns client UI state. Feature-specific Zustand stores belong inside their feature.
-- Use direct imports. Create subfolders when needed rather than empty placeholders. Only extract shared code when multiple features need it.
-- Routes remain code-based TanStack Router routes. API requests use the development `/api` proxy in `vite.config.ts`; production needs equivalent routing or API URL configuration.
+You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
 
-The existing Home page is the home route. Products retains loading, error, empty, and success states. Authentication and checkout are not implemented yet.
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-## Checks
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 
-- `npm run build`
-- `npm run lint`
+```
