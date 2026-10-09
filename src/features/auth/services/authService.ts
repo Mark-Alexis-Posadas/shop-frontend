@@ -25,4 +25,9 @@ export const authService = {
     const { data } = await api.post<AuthResponse>("/auth/register", payload);
     return data;
   },
+
+  getMe: async (): Promise<AuthUser> => {
+    const { data } = await api.get<AuthUser>("/auth/me");
+    return data;
+  },
 };

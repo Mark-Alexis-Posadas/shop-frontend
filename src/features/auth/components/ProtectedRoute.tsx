@@ -1,12 +1,23 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+
 import { useAuthStore } from "../store/authStore";
 
-export default function ProtectedRoute() {
+const ProtectedRoute = () => {
   const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
+  const isAuthLoading = useAuthStore((state) => state.isAuthLoading);
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
+  const location = useLocation();
+
+  if (isAuthLoading) {
+    return <div className="p-8 text-center">Checking authentication...</div>;
+  }
+
+  if (!token || !user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return <Outlet />;
-}
+};
+
+export default ProtectedRoute;
