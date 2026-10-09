@@ -1,67 +1,44 @@
 import { Route, Routes, Link } from "react-router-dom";
+
 import MainLayout from "../shared/components/layout/MainLayout";
-import PagePlaceholder from "../shared/components/ui/PagePlaceholder";
+
+// Product Pages
 import ProductListPage from "../features/products/pages/ProductListPage";
 import ProductDetailPage from "../features/products/pages/ProductDetailPage";
+
+// Auth Pages
+import LoginPage from "../features/auth/pages/LoginPage";
+import RegisterPage from "../features/auth/pages/RegisterPage";
+
+// Cart Pages
+import CartPage from "../features/cart/pages/CartPage";
+
+// Route Guards
+import ProtectedRoute from "../features/auth/components/ProtectedRoute";
 
 const AppRouter = () => {
   return (
     <Routes>
       <Route element={<MainLayout />}>
+        {/* Public Routes */}
         <Route index element={<ProductListPage />} />
         <Route path="products" element={<ProductListPage />} />
         <Route path="products/:productId" element={<ProductDetailPage />} />
 
-        <Route
-          path="cart"
-          element={
-            <PagePlaceholder
-              title="Your Shopping Cart"
-              description="Your cart items will appear here."
-            />
-          }
-        />
+        {/* Authentication Routes */}
+        <Route path="login" element={<LoginPage />} />
+        <Route path="register" element={<RegisterPage />} />
 
-        <Route
-          path="checkout"
-          element={
-            <PagePlaceholder
-              title="Checkout"
-              description="Secure checkout is coming soon."
-            />
-          }
-        />
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="cart" element={<CartPage />} />
 
-        <Route
-          path="orders"
-          element={
-            <PagePlaceholder
-              title="My Orders"
-              description="Your order history will appear here."
-            />
-          }
-        />
+          {/* Future Protected Pages */}
+          {/* <Route path="checkout" element={<CheckoutPage />} /> */}
+          {/* <Route path="orders" element={<OrdersPage />} /> */}
+        </Route>
 
-        <Route
-          path="login"
-          element={
-            <PagePlaceholder
-              title="Welcome Back"
-              description="Login functionality is coming soon."
-            />
-          }
-        />
-
-        <Route
-          path="register"
-          element={
-            <PagePlaceholder
-              title="Create Account"
-              description="Registration functionality is coming soon."
-            />
-          }
-        />
-
+        {/* 404 Not Found */}
         <Route
           path="*"
           element={

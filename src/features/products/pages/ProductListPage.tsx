@@ -1,27 +1,28 @@
 import ProductCard from "../components/ProductCard";
-import { products } from "../data/products";
+import { useProducts } from "../hooks/useProducts";
 
 const ProductListPage = () => {
+  const { data: products = [], isPending, isError, refetch } = useProducts();
+
   return (
     <>
       <section className="bg-indigo-950 px-6 py-20 text-white">
         <div className="mx-auto max-w-7xl">
-          <span className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium">
+          <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
             New Collection
           </span>
 
-          <h1 className="mt-7 max-w-2xl text-4xl font-extrabold leading-tight md:text-6xl">
+          <h1 className="mt-7 max-w-2xl text-4xl font-extrabold md:text-6xl">
             Discover products you'll love.
           </h1>
 
-          <p className="mt-5 max-w-xl text-indigo-100">
-            Shop quality products at great prices. Discover your next favorite
-            item with ShopSphere.
+          <p className="mt-5 text-indigo-100">
+            Shop quality products at great prices.
           </p>
 
           <a
             href="#products"
-            className="mt-8 inline-block rounded-xl bg-white px-6 py-3 font-semibold text-indigo-950 transition hover:bg-indigo-100"
+            className="mt-8 inline-block rounded-xl bg-white px-6 py-3 font-semibold text-indigo-950"
           >
             Shop Now
           </a>
@@ -29,16 +30,33 @@ const ProductListPage = () => {
       </section>
 
       <section id="products" className="mx-auto max-w-7xl px-6 py-16">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold">Featured Products</h2>
-          <p className="mt-2 text-gray-500">Explore our latest collection.</p>
-        </div>
+        <h2 className="mb-8 text-3xl font-bold">Featured Products</h2>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {isPending && <p>Loading products...</p>}
+
+        {isError && (
+          <div role="alert">
+            <p className="text-red-600">Failed to load products.</p>
+            <button
+              onClick={() => void refetch()}
+              className="mt-3 rounded bg-indigo-600 px-4 py-2 text-white"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {!isPending && !isError && products.length === 0 && (
+          <p className="text-gray-500">No products available yet.</p>
+        )}
+
+        {!isPending && !isError && products.length > 0 && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {products.map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
+          </div>
+        )}
       </section>
     </>
   );
