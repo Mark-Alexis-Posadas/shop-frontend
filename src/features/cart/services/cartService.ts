@@ -1,11 +1,20 @@
 import { api } from "../../../shared/lib/api";
+import type { Product } from "../../products/services/productService";
 
-export interface CartItem {
+// Payload sent to PUT /api/cart
+export interface CartItemInput {
   product: string;
   quantity: number;
 }
 
+// Populated product returned by GET /api/cart
+export interface CartItem {
+  product: Product;
+  quantity: number;
+}
+
 export interface Cart {
+  _id?: string;
   user: string;
   items: CartItem[];
 }
@@ -16,8 +25,9 @@ export const cartService = {
     return data;
   },
 
-  updateCart: async (items: CartItem[]): Promise<Cart> => {
+  updateCart: async (items: CartItemInput[]): Promise<Cart> => {
     const { data } = await api.put<Cart>("/cart", { items });
+
     return data;
   },
 };
