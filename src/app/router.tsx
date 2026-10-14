@@ -13,6 +13,12 @@ import RegisterPage from "../features/auth/pages/RegisterPage";
 // Cart Pages
 import CartPage from "../features/cart/pages/CartPage";
 
+// Order Pages
+
+import CheckoutPage from "../features/checkout/pages/CheckoutPage";
+import OrderDetailsPage from "../features/orders/pages/OrderDetailsPage";
+import MyOrdersPage from "../features/orders/pages/MyOrdersPage";
+
 // Route Guards
 import ProtectedRoute from "../features/auth/components/ProtectedRoute";
 
@@ -33,9 +39,9 @@ const AppRouter = () => {
         <Route element={<ProtectedRoute />}>
           <Route path="cart" element={<CartPage />} />
 
-          {/* Future Protected Pages */}
-          {/* <Route path="checkout" element={<CheckoutPage />} /> */}
-          {/* <Route path="orders" element={<OrdersPage />} /> */}
+          <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="orders" element={<MyOrdersPage />} />
+          <Route path="orders/:orderId" element={<OrderDetailsPage />} />
         </Route>
 
         {/* 404 Not Found */}
