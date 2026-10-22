@@ -17,6 +17,7 @@ import {
 
 import { useCart } from "../../cart/hooks/useCart";
 import { useCreateOrder } from "../../orders/hooks/useOrders";
+import { isUnavailable } from "../../cart/services/cartService";
 import type { ShippingAddress } from "../../orders/types/order.types";
 
 type AddressField = keyof ShippingAddress;
@@ -78,7 +79,14 @@ const validateAddress = (address: ShippingAddress): AddressErrors => {
 const CheckoutPage = () => {
   const navigate = useNavigate();
 
-  const { data: cart, isLoading, isError, refetch } = useCart();
+  const {
+    data: cart,
+    isLoading,
+    isError,
+    refetch,
+    isUpdating,
+    isFetching,
+  } = useCart();
 
   const createOrder = useCreateOrder();
   const submittingRef = useRef(false);
@@ -88,11 +96,15 @@ const CheckoutPage = () => {
   const [errors, setErrors] = useState<AddressErrors>({});
   const [submitError, setSubmitError] = useState("");
 
-  const items = cart?.items ?? [];
+  const items = useMemo(() => cart?.items ?? [], [cart]);
+  const unavailable = items.some(isUnavailable);
 
   const subtotal = useMemo(
     () =>
-      items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+      items.reduce(
+        (sum, item) => sum + (item.product?.price ?? 0) * item.quantity,
+        0,
+      ),
     [items],
   );
 
@@ -116,7 +128,12 @@ const CheckoutPage = () => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (submittingRef.current || createOrder.isPending) {
+    if (
+      submittingRef.current ||
+      createOrder.isPending ||
+      isUpdating ||
+      isFetching
+    ) {
       return;
     }
 
@@ -135,12 +152,20 @@ const CheckoutPage = () => {
       setSubmitError("Your cart is empty.");
       return;
     }
+    if (!cart?._id || unavailable) {
+      setSubmitError(
+        "Some items are unavailable. Return to your cart to review or remove them.",
+      );
+      return;
+    }
 
     submittingRef.current = true;
     setSubmitError("");
 
     try {
       const order = await createOrder.mutateAsync({
+        cartId: cart._id,
+        version: cart.version,
         shippingAddress: {
           fullName: address.fullName.trim(),
           phone: address.phone.trim(),
@@ -543,19 +568,19 @@ const CheckoutPage = () => {
               <div className="max-h-80 space-y-5 overflow-y-auto p-6">
                 {items.map((item) => {
                   const image =
-                    item.product.images?.find((img) => img.isPrimary)?.url ??
-                    item.product.images?.[0]?.url;
+                    item.product?.images?.find((img) => img.isPrimary)?.url ??
+                    item.product?.images?.[0]?.url;
 
                   return (
                     <div
-                      key={item.product._id}
+                      key={item.productId}
                       className="flex items-start gap-4"
                     >
                       <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
                         {image ? (
                           <img
                             src={image}
-                            alt={item.product.name}
+                            alt={item.product?.name ?? "Unavailable product"}
                             className="h-full w-full object-cover"
                           />
                         ) : (
@@ -569,7 +594,7 @@ const CheckoutPage = () => {
 
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-sm font-semibold text-slate-900">
-                          {item.product.name}
+                          {item.product?.name ?? "Product no longer available"}
                         </p>
 
                         <p className="mt-1 text-xs text-slate-500">
@@ -577,7 +602,11 @@ const CheckoutPage = () => {
                         </p>
 
                         <p className="mt-2 text-sm font-bold text-slate-900">
-                          {formatCurrency(item.product.price * item.quantity)}
+                          {isUnavailable(item)
+                            ? "Unavailable — review your cart"
+                            : formatCurrency(
+                                (item.product?.price ?? 0) * item.quantity,
+                              )}
                         </p>
                       </div>
                     </div>
@@ -613,6 +642,18 @@ const CheckoutPage = () => {
                   Final price and stock are confirmed when your order is placed.
                 </p>
 
+                {unavailable && (
+                  <p
+                    role="alert"
+                    className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+                  >
+                    Some items are unavailable.{" "}
+                    <Link to="/cart" className="font-semibold underline">
+                      Review and remove them in your cart
+                    </Link>{" "}
+                    before placing an order.
+                  </p>
+                )}
                 {submitError && (
                   <div
                     role="alert"
@@ -624,7 +665,12 @@ const CheckoutPage = () => {
 
                 <button
                   type="submit"
-                  disabled={createOrder.isPending}
+                  disabled={
+                    createOrder.isPending ||
+                    unavailable ||
+                    isUpdating ||
+                    isFetching
+                  }
                   className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {createOrder.isPending ? (

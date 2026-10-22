@@ -4,6 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "format": "node ../scripts/format.mjs --write",
+    "format:check": "node ../scripts/format.mjs --check",
+    "format:staged:check": "node ../scripts/check-staged-format.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

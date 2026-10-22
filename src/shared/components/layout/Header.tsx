@@ -29,7 +29,7 @@ const Header = () => {
 
   const { data: cart } = useQuery({
     queryKey: ["cart", token],
-    queryFn: cartService.getCart,
+    queryFn: ({ signal }) => cartService.getCart(signal),
     enabled: isAuthenticated,
   });
 

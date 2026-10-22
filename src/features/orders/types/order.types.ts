@@ -18,11 +18,7 @@ export interface OrderItem {
 }
 
 export type OrderStatus =
-  | "pending"
-  | "confirmed"
-  | "shipped"
-  | "delivered"
-  | "cancelled";
+  "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
 
 export type PaymentStatus = "unpaid" | "paid";
 
@@ -42,6 +38,8 @@ export interface Order {
 }
 
 export interface CreateOrderPayload {
+  cartId: string;
+  version: number;
   shippingAddress: ShippingAddress;
   paymentMethod: "COD";
 }

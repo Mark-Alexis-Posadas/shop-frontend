@@ -18,6 +18,7 @@ import {
 
 import { useCart } from "../hooks/useCart";
 import { formatPrice } from "../../products/utils/product.utils";
+import { isUnavailable } from "../services/cartService";
 
 export default function CartPage() {
   const {
@@ -29,6 +30,7 @@ export default function CartPage() {
     updateError,
     changeQuantity,
     removeFromCart,
+    refetch,
   } = useCart();
 
   if (isPending) {
@@ -80,6 +82,13 @@ export default function CartPage() {
               : "Something went wrong while loading your cart."}
           </p>
 
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="mt-6 rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white hover:bg-indigo-700"
+          >
+            Try Again
+          </button>
           <Link
             to="/products"
             className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white transition hover:bg-indigo-700"
@@ -196,7 +205,31 @@ export default function CartPage() {
               {items.map((item) => {
                 const product = item.product;
 
-                if (!product) return null;
+                if (!product)
+                  return (
+                    <article
+                      key={item.productId}
+                      className="rounded-2xl border border-red-200 bg-white p-6"
+                    >
+                      <p className="font-semibold text-slate-900">
+                        Product no longer available
+                      </p>
+                      <p className="mt-2 text-sm text-slate-500">
+                        Remove this item before checkout. Quantity:{" "}
+                        {item.quantity}
+                      </p>
+                      <button
+                        type="button"
+                        disabled={isUpdating}
+                        onClick={() => {
+                          void removeFromCart(item.productId).catch(() => {});
+                        }}
+                        className="mt-3 rounded-xl px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 disabled:opacity-40"
+                      >
+                        Remove unavailable item
+                      </button>
+                    </article>
+                  );
 
                 const image =
                   product.images?.find((img) => img.isPrimary)?.url ??
@@ -359,6 +392,13 @@ export default function CartPage() {
                       ? updateError.message
                       : "Failed to update your cart."}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => void refetch()}
+                    className="shrink-0 font-semibold underline"
+                  >
+                    Reload cart
+                  </button>
                 </div>
               )}
 
@@ -424,36 +464,14 @@ export default function CartPage() {
 
                   <Link
                     to="/checkout"
-                    aria-disabled={
-                      isUpdating ||
-                      items.some(
-                        (item) =>
-                          !item.product ||
-                          !item.product.isActive ||
-                          item.product.stock < item.quantity,
-                      )
-                    }
+                    aria-disabled={isUpdating || items.some(isUnavailable)}
                     onClick={(e) => {
-                      if (
-                        isUpdating ||
-                        items.some(
-                          (item) =>
-                            !item.product ||
-                            !item.product.isActive ||
-                            item.product.stock < item.quantity,
-                        )
-                      ) {
+                      if (isUpdating || items.some(isUnavailable)) {
                         e.preventDefault();
                       }
                     }}
                     className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-bold text-white shadow-lg transition ${
-                      isUpdating ||
-                      items.some(
-                        (item) =>
-                          !item.product ||
-                          !item.product.isActive ||
-                          item.product.stock < item.quantity,
-                      )
+                      isUpdating || items.some(isUnavailable)
                         ? "cursor-not-allowed bg-indigo-300 shadow-none"
                         : "bg-indigo-600 shadow-indigo-600/20 hover:bg-indigo-700"
                     }`}

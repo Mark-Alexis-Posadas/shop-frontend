@@ -1,8 +1,13 @@
 import { useRef } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useIsMutating,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { cartService } from "../services/cartService";
-import type { CartItemInput } from "../services/cartService";
+import type { Cart, CartItemInput } from "../services/cartService";
 import { useAuthStore } from "../../auth/store/authStore";
 
 export function useCart() {
@@ -12,28 +17,41 @@ export function useCart() {
   const isUpdatingRef = useRef(false);
 
   const queryKey = ["cart", token] as const;
+  const mutationKey = ["cart-update", token] as const;
+  const activeUpdates = useIsMutating({ mutationKey });
 
   const cartQuery = useQuery({
     queryKey,
-    queryFn: cartService.getCart,
+    queryFn: ({ signal }) => cartService.getCart(signal),
     enabled: Boolean(token),
   });
 
   const updateMutation = useMutation({
+    mutationKey,
+    retry: false,
     mutationFn: cartService.updateCart,
-
-    onSuccess: (updatedCart) => {
-      queryClient.setQueryData(queryKey, updatedCart);
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey, exact: true });
     },
 
-    onError: () => {
-      void queryClient.invalidateQueries({
+    onSuccess: async (updatedCart) => {
+      await queryClient.cancelQueries({ queryKey, exact: true });
+      queryClient.setQueryData<Cart>(queryKey, (current) =>
+        current?._id === updatedCart._id &&
+        current.version > updatedCart.version
+          ? current
+          : updatedCart,
+      );
+    },
+
+    onError: async () => {
+      await queryClient.invalidateQueries({
         queryKey,
       });
     },
   });
 
-  const updateCartItems = async (items: CartItemInput[]) => {
+  const updateCartItems = async (cart: Cart, items: CartItemInput[]) => {
     if (!token) {
       throw new Error("Please log in first.");
     }
@@ -42,7 +60,7 @@ export function useCart() {
       throw new Error("Cart is not ready yet.");
     }
 
-    // Prevent rapid clicks from overlapping mutations.
+    // Local click guard only. Database revisions protect other hooks/tabs.
     if (isUpdatingRef.current) {
       throw new Error("Cart update already in progress.");
     }
@@ -50,31 +68,40 @@ export function useCart() {
     isUpdatingRef.current = true;
 
     try {
-      return await updateMutation.mutateAsync(items);
+      return await updateMutation.mutateAsync({
+        items,
+        cartId: cart._id,
+        version: cart.version,
+      });
     } finally {
       isUpdatingRef.current = false;
     }
   };
 
-  const getCurrentItems = (): CartItemInput[] => {
-    const cart = queryClient.getQueryData<typeof cartQuery.data>(queryKey);
+  const getCurrentCart = (): Cart => {
+    if (!token) throw new Error("Please log in first.");
+    const cart = queryClient.getQueryData<Cart>(queryKey);
 
     if (!cart) {
       throw new Error("Cart is not ready yet.");
     }
 
-    return cart.items.map((item) => ({
-      product: item.product._id,
+    return cart;
+  };
+
+  const getItems = (cart: Cart): CartItemInput[] =>
+    cart.items.map((item) => ({
+      product: item.productId,
       quantity: item.quantity,
     }));
-  };
 
   const addToCart = async (productId: string, quantity = 1) => {
     if (!Number.isInteger(quantity) || quantity < 1) {
       throw new Error("Invalid quantity.");
     }
 
-    const items = getCurrentItems();
+    const cart = getCurrentCart();
+    const items = getItems(cart);
 
     const existingItem = items.find((item) => item.product === productId);
 
@@ -87,7 +114,7 @@ export function useCart() {
       });
     }
 
-    return updateCartItems(items);
+    return updateCartItems(cart, items);
   };
 
   const changeQuantity = async (productId: string, quantity: number) => {
@@ -95,20 +122,20 @@ export function useCart() {
       throw new Error("Invalid quantity.");
     }
 
-    const items = getCurrentItems().map((item) => ({
+    const cart = getCurrentCart();
+    const items = getItems(cart).map((item) => ({
       ...item,
       quantity: item.product === productId ? quantity : item.quantity,
     }));
 
-    return updateCartItems(items);
+    return updateCartItems(cart, items);
   };
 
   const removeFromCart = async (productId: string) => {
-    const items = getCurrentItems().filter(
-      (item) => item.product !== productId,
-    );
+    const cart = getCurrentCart();
+    const items = getItems(cart).filter((item) => item.product !== productId);
 
-    return updateCartItems(items);
+    return updateCartItems(cart, items);
   };
 
   return {
@@ -116,7 +143,7 @@ export function useCart() {
     addToCart,
     changeQuantity,
     removeFromCart,
-    isUpdating: updateMutation.isPending,
+    isUpdating: activeUpdates > 0,
     updateError: updateMutation.error,
   };
 }
