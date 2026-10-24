@@ -35,7 +35,9 @@ export function useCart() {
     },
 
     onSuccess: async (updatedCart) => {
+      if (useAuthStore.getState().token !== token) return;
       await queryClient.cancelQueries({ queryKey, exact: true });
+      if (useAuthStore.getState().token !== token) return;
       queryClient.setQueryData<Cart>(queryKey, (current) =>
         current?._id === updatedCart._id &&
         current.version > updatedCart.version
@@ -45,6 +47,7 @@ export function useCart() {
     },
 
     onError: async () => {
+      if (useAuthStore.getState().token !== token) return;
       await queryClient.invalidateQueries({
         queryKey,
       });
@@ -52,7 +55,7 @@ export function useCart() {
   });
 
   const updateCartItems = async (cart: Cart, items: CartItemInput[]) => {
-    if (!token) {
+    if (!token || useAuthStore.getState().token !== token) {
       throw new Error("Please log in first.");
     }
 
@@ -79,7 +82,8 @@ export function useCart() {
   };
 
   const getCurrentCart = (): Cart => {
-    if (!token) throw new Error("Please log in first.");
+    if (!token || useAuthStore.getState().token !== token)
+      throw new Error("Please log in first.");
     const cart = queryClient.getQueryData<Cart>(queryKey);
 
     if (!cart) {

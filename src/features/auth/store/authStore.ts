@@ -12,11 +12,12 @@ interface AuthState {
   user: AuthUser | null;
   token: string | null;
   isAuthLoading: boolean;
+  sessionExpired: boolean;
 
   setAuth: (user: AuthUser, token: string) => void;
   setUser: (user: AuthUser) => void;
   setAuthLoading: (loading: boolean) => void;
-  logout: () => void;
+  logout: (expired?: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -25,11 +26,13 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthLoading: true,
+      sessionExpired: false,
 
       setAuth: (user, token) =>
         set({
           user,
           token,
+          sessionExpired: false,
           isAuthLoading: false,
         }),
 
@@ -41,10 +44,11 @@ export const useAuthStore = create<AuthState>()(
 
       setAuthLoading: (loading) => set({ isAuthLoading: loading }),
 
-      logout: () =>
+      logout: (expired = false) =>
         set({
           user: null,
           token: null,
+          sessionExpired: expired,
           isAuthLoading: false,
         }),
     }),

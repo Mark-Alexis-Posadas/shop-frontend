@@ -1,5 +1,7 @@
-import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { authReturnDestination } from "../utils/authNavigation";
+import { clearCustomerCache } from "../utils/customerSession";
+import { useRef, useState, type FormEvent } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ShoppingBag,
@@ -19,7 +21,11 @@ import { authService } from "../services/authService";
 import { useAuthStore } from "../store/authStore";
 
 export default function LoginPage() {
+  const submittingRef = useRef(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const destination = authReturnDestination(location.state);
+  const sessionExpired = useAuthStore((state) => state.sessionExpired);
   const queryClient = useQueryClient();
   const setAuth = useAuthStore((state) => state.setAuth);
 
@@ -28,15 +34,20 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const loginMutation = useMutation({
     mutationFn: authService.login,
+    onSettled: () => {
+      submittingRef.current = false;
+    },
     onSuccess: async ({ user, token }) => {
-      queryClient.clear();
+      clearCustomerCache(queryClient);
       setAuth(user, token);
-      navigate("/products", { replace: true });
+      navigate(destination.to, { replace: true, state: destination.state });
     },
   });
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (submittingRef.current || loginMutation.isPending) return;
+    submittingRef.current = true;
     loginMutation.mutate({ email, password });
   };
 
@@ -126,6 +137,14 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {sessionExpired && (
+            <p
+              role="status"
+              className="mb-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-800"
+            >
+              Your session expired. Sign in to continue where you left off.
+            </p>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div>
@@ -243,6 +262,10 @@ export default function LoginPage() {
             Don't have an account?{" "}
             <Link
               to="/register"
+              state={{
+                from: destination.to,
+                returnTo: destination.state?.returnTo,
+              }}
               className="font-bold text-indigo-600 transition hover:text-indigo-800 hover:underline"
             >
               Create an account

@@ -1,9 +1,11 @@
+import { useRef } from "react";
 import { isAxiosError } from "axios";
 import { useCancelOrder } from "../hooks/useOrders";
 import type { Order } from "../types/order.types";
 
 export function CancelOrderAction({ order }: { order: Order }) {
   const cancellation = useCancelOrder();
+  const submittingRef = useRef(false);
   const eligible =
     order.paymentMethod === "COD" &&
     order.paymentStatus === "unpaid" &&
@@ -23,15 +25,22 @@ export function CancelOrderAction({ order }: { order: Order }) {
           disabled={cancellation.isPending}
           className="rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-semibold text-red-700 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-600 disabled:opacity-50"
           onClick={() => {
+            if (submittingRef.current) return;
             if (
               window.confirm(
                 "Cancel this order? This cannot be undone. Your cart will not be restored.",
               )
-            )
-              cancellation.mutate(order._id);
+            ) {
+              submittingRef.current = true;
+              cancellation.mutate(order._id, {
+                onSettled: () => {
+                  submittingRef.current = false;
+                },
+              });
+            }
           }}
         >
-          {cancellation.isPending ? "Cancelling order?" : "Cancel order"}
+          {cancellation.isPending ? "Cancelling order..." : "Cancel order"}
         </button>
       )}
       {cancellation.isSuccess && (

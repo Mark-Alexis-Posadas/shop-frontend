@@ -1,3 +1,4 @@
+import { clearCustomerCache } from "../../../features/auth/utils/customerSession";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -37,7 +38,7 @@ const Header = () => {
     cart?.items.reduce((total, item) => total + item.quantity, 0) ?? 0;
 
   const handleLogout = () => {
-    queryClient.clear();
+    clearCustomerCache(queryClient);
     logout();
     navigate("/login", { replace: true });
   };
@@ -84,6 +85,7 @@ const Header = () => {
           {/* Cart icon with badge */}
           <Link
             to={isAuthenticated ? "/cart" : "/login"}
+            state={isAuthenticated ? undefined : { from: "/cart" }}
             aria-label={`Shopping cart, ${cartCount} items`}
             title="Shopping Cart"
             className="group relative flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600"

@@ -1,3 +1,4 @@
+import { useAuthStore } from "../../auth/store/authStore";
 import { myOrdersKey, type OrderFilters } from "../utils/orderFilters";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -8,9 +9,12 @@ export const useCreateOrder = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: ["orders", "create"],
     mutationFn: orderService.createOrder,
+    onMutate: () => ({ token: useAuthStore.getState().token }),
     retry: false,
-    onError: async (error) => {
+    onError: async (error, _variables, context) => {
+      if (context?.token !== useAuthStore.getState().token) return;
       if (
         isAxiosError(error) &&
         (error.response?.status === 409 || error.response?.status === 400)
@@ -20,7 +24,8 @@ export const useCreateOrder = () => {
       }
     },
 
-    onSuccess: () => {
+    onSuccess: (_order, _variables, context) => {
+      if (context?.token !== useAuthStore.getState().token) return;
       queryClient.invalidateQueries({
         queryKey: ["cart"],
       });
@@ -55,15 +60,20 @@ export const useOrderDetails = (orderId: string) => {
 export const useCancelOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ["orders", "cancel"],
     mutationFn: orderService.cancelOrder,
+    onMutate: () => ({ token: useAuthStore.getState().token }),
     retry: false,
-    onSuccess: async (order) => {
+    onSuccess: async (order, _variables, context) => {
+      if (context?.token !== useAuthStore.getState().token) return;
       await queryClient.cancelQueries({
         queryKey: ["orders", "detail", order._id],
       });
+      if (context?.token !== useAuthStore.getState().token) return;
       queryClient.setQueryData(["orders", "detail", order._id], order);
     },
-    onSettled: async () => {
+    onSettled: async (_data, _error, _variables, context) => {
+      if (context?.token !== useAuthStore.getState().token) return;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["orders"] }),
         queryClient.invalidateQueries({ queryKey: ["products"] }),

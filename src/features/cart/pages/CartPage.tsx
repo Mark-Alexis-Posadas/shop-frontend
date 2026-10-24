@@ -1,3 +1,5 @@
+import { requestErrorMessage } from "../../../shared/lib/requestError";
+import { ProductImage } from "../../../shared/components/ui/ProductImage";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -77,9 +79,10 @@ export default function CartPage() {
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-slate-500">
-            {error instanceof Error
-              ? error.message
-              : "Something went wrong while loading your cart."}
+            {requestErrorMessage(
+              error,
+              "Unable to load your cart. Please try again.",
+            )}
           </p>
 
           <button
@@ -252,7 +255,7 @@ export default function CartPage() {
                         className="flex h-36 w-full shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-50 sm:h-36 sm:w-36"
                       >
                         {image ? (
-                          <img
+                          <ProductImage
                             src={image}
                             alt={product.name}
                             loading="lazy"
@@ -388,9 +391,10 @@ export default function CartPage() {
                   <AlertCircle size={18} className="mt-0.5 shrink-0" />
 
                   <p>
-                    {updateError instanceof Error
-                      ? updateError.message
-                      : "Failed to update your cart."}
+                    {requestErrorMessage(
+                      updateError,
+                      "Unable to update your cart. Refresh it and try again.",
+                    )}
                   </p>
                   <button
                     type="button"

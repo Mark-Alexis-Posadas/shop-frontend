@@ -1,3 +1,4 @@
+import { ProductImage } from "../../../shared/components/ui/ProductImage";
 import {
   orderStatuses,
   paymentStatuses,
@@ -105,7 +106,7 @@ const OrderCard = ({ order }: { order: Order }) => {
           >
             <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
               {item.imageUrl ? (
-                <img
+                <ProductImage
                   src={item.imageUrl}
                   alt={item.name}
                   loading="lazy"

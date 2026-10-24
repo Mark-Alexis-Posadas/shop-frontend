@@ -1,3 +1,4 @@
+import { ProductImage } from "../../../shared/components/ui/ProductImage";
 import { orderHistoryReturnTo } from "../utils/orderFilters";
 import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -229,7 +230,7 @@ const OrderContent = ({ order }: { order: Order }) => {
                   >
                     <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
                       {item.imageUrl ? (
-                        <img
+                        <ProductImage
                           src={item.imageUrl}
                           alt={item.name}
                           loading="lazy"

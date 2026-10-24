@@ -1,3 +1,4 @@
+import { ProductImage } from "../../../shared/components/ui/ProductImage";
 import { Link, useLocation } from "react-router-dom";
 import type { Product } from "../services/productService";
 import {
@@ -26,7 +27,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         className="relative block overflow-hidden bg-gray-100"
       >
         {image ? (
-          <img
+          <ProductImage
             src={image}
             alt={product.name}
             loading="lazy"

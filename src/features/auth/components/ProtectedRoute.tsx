@@ -13,7 +13,23 @@ const ProtectedRoute = () => {
     return <div className="p-8 text-center">Checking authentication...</div>;
   }
 
-  if (!token || !user) {
+  if (token && !user) {
+    return (
+      <div role="alert" className="mx-auto max-w-md p-8 text-center">
+        <p>
+          Unable to verify your session. Check your connection and try again.
+        </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-4 rounded-xl bg-indigo-600 px-5 py-3 text-white"
+        >
+          Retry session check
+        </button>
+      </div>
+    );
+  }
+  if (!token) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

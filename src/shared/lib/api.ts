@@ -1,3 +1,5 @@
+import { queryClient } from "../../app/queryClient";
+import { installCustomerSessionRecovery } from "../../features/auth/utils/customerSession";
 import axios from "axios";
 import { useAuthStore } from "../../features/auth/store/authStore";
 
@@ -20,3 +22,5 @@ api.interceptors.request.use((config) => {
 
   return config;
 });
+
+installCustomerSessionRecovery(api, queryClient);

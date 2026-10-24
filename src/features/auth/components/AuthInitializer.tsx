@@ -1,3 +1,5 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { clearCustomerCache } from "../utils/customerSession";
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { useAuthStore } from "../store/authStore";
@@ -8,6 +10,7 @@ interface AuthInitializerProps {
 }
 
 const AuthInitializer = ({ children }: AuthInitializerProps) => {
+  const queryClient = useQueryClient();
   const token = useAuthStore((state) => state.token);
   const isAuthLoading = useAuthStore((state) => state.isAuthLoading);
 
@@ -67,8 +70,9 @@ const AuthInitializer = ({ children }: AuthInitializerProps) => {
               ).response?.status
             : undefined;
 
-        if (status === 401 || status === 403) {
-          logout();
+        if (status === 401) {
+          clearCustomerCache(queryClient);
+          logout(true);
         } else {
           // Network/server failure: keep saved token.
           // The user can retry after connectivity returns.
@@ -83,7 +87,7 @@ const AuthInitializer = ({ children }: AuthInitializerProps) => {
       active = false;
       initializedToken.current = null;
     };
-  }, [token, setUser, logout, setAuthLoading]);
+  }, [token, setUser, logout, setAuthLoading, queryClient]);
 
   if (isAuthLoading) {
     return (

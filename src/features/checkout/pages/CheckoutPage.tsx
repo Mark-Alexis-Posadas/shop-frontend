@@ -1,6 +1,8 @@
+import { useAuthStore } from "../../auth/store/authStore";
+import { requestErrorMessage } from "../../../shared/lib/requestError";
+import { ProductImage } from "../../../shared/components/ui/ProductImage";
 import { useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { AxiosError } from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -159,6 +161,7 @@ const CheckoutPage = () => {
       return;
     }
 
+    const submittedToken = useAuthStore.getState().token;
     submittingRef.current = true;
     setSubmitError("");
 
@@ -178,17 +181,16 @@ const CheckoutPage = () => {
         paymentMethod: "COD",
       });
 
+      if (submittedToken !== useAuthStore.getState().token) return;
       navigate(`/orders/${order._id}`, {
         replace: true,
       });
     } catch (error) {
-      const axiosError = error as AxiosError<{
-        message?: string;
-      }>;
-
       setSubmitError(
-        axiosError.response?.data?.message ??
-          "Unable to place your order. Please try again.",
+        requestErrorMessage(
+          error,
+          "Unable to confirm this order. Check My Orders before placing it again.",
+        ),
       );
     } finally {
       submittingRef.current = false;
@@ -578,7 +580,7 @@ const CheckoutPage = () => {
                     >
                       <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
                         {image ? (
-                          <img
+                          <ProductImage
                             src={image}
                             alt={item.product?.name ?? "Unavailable product"}
                             className="h-full w-full object-cover"

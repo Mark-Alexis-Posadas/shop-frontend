@@ -1,4 +1,8 @@
-import { useState } from "react";
+import { useAuthStore } from "../../auth/store/authStore";
+import { requestErrorMessage } from "../../../shared/lib/requestError";
+import { isAxiosError } from "axios";
+import { ProductImage } from "../../../shared/components/ui/ProductImage";
+import { useRef, useState } from "react";
 import { Link, useParams, useLocation } from "react-router-dom";
 
 import { useProduct } from "../hooks/useProducts";
@@ -20,9 +24,18 @@ const ProductDetailPage = () => {
       ? candidate
       : "/products";
 
-  const { data: product, isPending, isError, refetch } = useProduct(productId);
+  const {
+    data: product,
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = useProduct(productId);
 
-  const { addToCart } = useCart();
+  const cart = useCart();
+  const { addToCart } = cart;
+  const token = useAuthStore((state) => state.token);
+  const addingRef = useRef(false);
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
@@ -41,7 +54,25 @@ const ProductDetailPage = () => {
   if (isError || !product) {
     return (
       <div className="mx-auto max-w-7xl px-6 py-20">
-        <h1 className="text-2xl font-bold">Unable to load product</h1>
+        <h1 className="text-2xl font-bold">
+          {isAxiosError(error) && error.response?.status === 404
+            ? "Product unavailable"
+            : "Unable to load product"}
+        </h1>
+        <p role="alert" className="mt-3 text-slate-600">
+          {isAxiosError(error) && error.response?.status === 404
+            ? "This product is no longer available. Browse other products."
+            : requestErrorMessage(
+                error,
+                "Unable to load this product. Please try again.",
+              )}
+        </p>
+        <Link
+          to={returnTo}
+          className="mt-4 block font-semibold text-indigo-600"
+        >
+          Back to products
+        </Link>
 
         <button
           type="button"
@@ -65,7 +96,17 @@ const ProductDetailPage = () => {
   };
 
   const handleAddToCart = async () => {
-    if (outOfStock || isAdding) return;
+    if (
+      outOfStock ||
+      addingRef.current ||
+      !token ||
+      cart.isUpdating ||
+      cart.isFetching ||
+      cart.isPending ||
+      cart.isError
+    )
+      return;
+    addingRef.current = true;
 
     setIsAdding(true);
     setCartMessage("");
@@ -73,14 +114,18 @@ const ProductDetailPage = () => {
     try {
       await addToCart(product._id, Math.min(quantity, product.stock));
 
+      if (useAuthStore.getState().token !== token) return;
       setCartMessage(`${quantity} item(s) added to cart!`);
     } catch (error) {
+      if (useAuthStore.getState().token !== token) return;
       setCartMessage(
-        error instanceof Error
-          ? error.message
-          : "Failed to add product to cart.",
+        requestErrorMessage(
+          error,
+          "Unable to add this product. Refresh your cart and try again.",
+        ),
       );
     } finally {
+      addingRef.current = false;
       setIsAdding(false);
     }
   };
@@ -100,7 +145,7 @@ const ProductDetailPage = () => {
         <section>
           <div className="flex h-96 items-center justify-center overflow-hidden rounded-2xl bg-gray-100">
             {selectedImage ? (
-              <img
+              <ProductImage
                 src={selectedImage.url}
                 alt={selectedImage.alt || product.name}
                 className="h-full w-full object-contain p-6"
@@ -125,7 +170,7 @@ const ProductDetailPage = () => {
                       : "border-gray-200"
                   }`}
                 >
-                  <img
+                  <ProductImage
                     src={image.url}
                     alt={image.alt || product.name}
                     className="h-full w-full object-contain"
@@ -214,18 +259,55 @@ const ProductDetailPage = () => {
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => void handleAddToCart()}
-            disabled={outOfStock || isAdding}
-            className="mt-8 w-full rounded-xl bg-indigo-600 px-6 py-4 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-          >
-            {outOfStock
-              ? "Out of Stock"
-              : isAdding
-                ? "Adding..."
-                : "Add to Cart"}
-          </button>
+          {!token && !outOfStock ? (
+            <div className="mt-8">
+              <p className="text-sm text-slate-600">
+                Sign in to add items to your cart. Nothing will be added
+                automatically.
+              </p>
+              <Link
+                to="/login"
+                state={{ from: location }}
+                className="mt-3 inline-flex rounded-xl bg-indigo-600 px-6 py-4 font-semibold text-white focus-visible:outline-2"
+              >
+                Sign in to add to cart
+              </Link>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void handleAddToCart()}
+              disabled={
+                outOfStock ||
+                isAdding ||
+                cart.isUpdating ||
+                cart.isFetching ||
+                cart.isPending ||
+                cart.isError
+              }
+              className="mt-8 w-full rounded-xl bg-indigo-600 px-6 py-4 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+            >
+              {outOfStock
+                ? "Out of Stock"
+                : isAdding
+                  ? "Adding..."
+                  : cart.isPending || cart.isFetching
+                    ? "Loading cart..."
+                    : "Add to Cart"}
+            </button>
+          )}
+          {token && cart.isError && (
+            <div role="alert" className="mt-3 text-sm text-red-700">
+              <p>Unable to load your cart. Check your connection and retry.</p>
+              <button
+                type="button"
+                onClick={() => void cart.refetch()}
+                className="mt-2 font-semibold underline"
+              >
+                Retry cart
+              </button>
+            </div>
+          )}
 
           {cartMessage && (
             <p role="status" className="mt-3 text-sm text-gray-700">
