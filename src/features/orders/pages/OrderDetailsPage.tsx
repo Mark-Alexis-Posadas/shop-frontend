@@ -16,6 +16,7 @@ import {
   XCircle,
 } from "lucide-react";
 
+import { CancelOrderAction } from "../components/CancelOrderAction";
 import { useOrderDetails } from "../hooks/useOrders";
 import type { Order, OrderStatus, PaymentStatus } from "../types/order.types";
 
@@ -183,6 +184,8 @@ const OrderContent = ({ order }: { order: Order }) => {
             </span>
           </div>
         </div>
+
+        <CancelOrderAction key={order._id} order={order} />
 
         {/* Success message */}
         {order.orderStatus === "pending" && (

@@ -3,6 +3,12 @@ import { api } from "../../../shared/lib/api";
 import type { CreateOrderPayload, Order } from "../types/order.types";
 
 export const orderService = {
+  cancelOrder: async (orderId: string): Promise<Order> => {
+    const { data } = await api.post<Order>(`/orders/${orderId}/cancel`, {
+      confirmed: true,
+    });
+    return data;
+  },
   createOrder: async (payload: CreateOrderPayload): Promise<Order> => {
     const { data } = await api.post<Order>("/orders", payload);
     return data;

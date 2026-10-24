@@ -49,3 +49,23 @@ export const useOrderDetails = (orderId: string) => {
     enabled: Boolean(orderId),
   });
 };
+
+export const useCancelOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: orderService.cancelOrder,
+    retry: false,
+    onSuccess: async (order) => {
+      await queryClient.cancelQueries({
+        queryKey: ["orders", "detail", order._id],
+      });
+      queryClient.setQueryData(["orders", "detail", order._id], order);
+    },
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
+      ]);
+    },
+  });
+};
