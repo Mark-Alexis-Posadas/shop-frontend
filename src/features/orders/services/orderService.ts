@@ -8,6 +8,12 @@ import type {
 } from "../types/order.types";
 
 export const orderService = {
+  getCheckoutAttempt: async (key: string): Promise<Order> => {
+    const { data } = await api.get<Order>(
+      `/orders/checkout-attempts/${encodeURIComponent(key)}`,
+    );
+    return data;
+  },
   cancelOrder: async (orderId: string): Promise<Order> => {
     const { data } = await api.post<Order>(`/orders/${orderId}/cancel`, {
       confirmed: true,

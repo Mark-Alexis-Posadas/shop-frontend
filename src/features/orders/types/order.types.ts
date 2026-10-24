@@ -38,6 +38,7 @@ export interface Order {
 }
 
 export interface CreateOrderPayload {
+  idempotencyKey?: string;
   cartId: string;
   version: number;
   shippingAddress: ShippingAddress;

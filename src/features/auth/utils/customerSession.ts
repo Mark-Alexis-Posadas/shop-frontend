@@ -1,3 +1,4 @@
+import { forgetCheckoutPayloads } from "../../checkout/utils/checkoutAttempt";
 import { isAxiosError, type AxiosInstance } from "axios";
 import type { QueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
@@ -5,6 +6,7 @@ import { useAuthStore } from "../store/authStore";
 const isPrivateKey = (key: readonly unknown[]) =>
   ["cart", "orders", "cart-update"].includes(String(key[0]));
 export function clearCustomerCache(client: QueryClient) {
+  forgetCheckoutPayloads();
   const predicate = (query: { queryKey: readonly unknown[] }) =>
     isPrivateKey(query.queryKey);
   void client.cancelQueries({ predicate });

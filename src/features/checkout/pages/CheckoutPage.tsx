@@ -1,7 +1,16 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { orderService } from "../../orders/services/orderService";
+import {
+  readCheckoutAttempt,
+  submitCheckoutAttempt,
+  finishCheckoutAttempt,
+  checkoutPayload,
+  type CheckoutAttemptInfo,
+} from "../utils/checkoutAttempt";
 import { useAuthStore } from "../../auth/store/authStore";
 import { requestErrorMessage } from "../../../shared/lib/requestError";
 import { ProductImage } from "../../../shared/components/ui/ProductImage";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -80,6 +89,19 @@ const validateAddress = (address: ShippingAddress): AddressErrors => {
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((state) => state.user?._id ?? null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const [attempt, setAttempt] = useState<CheckoutAttemptInfo | null>(() =>
+    readCheckoutAttempt(userId),
+  );
+  const [isPlacing, setIsPlacing] = useState(false);
 
   const {
     data: cart,
@@ -161,41 +183,157 @@ const CheckoutPage = () => {
       return;
     }
 
+    await placeOrder({
+      cartId: attempt?.cartId ?? cart._id,
+      version: attempt?.version ?? cart.version,
+      shippingAddress: {
+        fullName: address.fullName.trim(),
+        phone: address.phone.trim(),
+        addressLine1: address.addressLine1.trim(),
+        addressLine2: address.addressLine2?.trim(),
+        city: address.city.trim(),
+        province: address.province.trim(),
+        postalCode: address.postalCode.trim(),
+      },
+      paymentMethod: "COD",
+    });
+  };
+
+  const placeOrder = async (
+    payload: Parameters<typeof submitCheckoutAttempt>[1],
+  ) => {
+    if (
+      !userId ||
+      useAuthStore.getState().user?._id !== userId ||
+      submittingRef.current
+    )
+      return;
     const submittedToken = useAuthStore.getState().token;
     submittingRef.current = true;
+    setIsPlacing(true);
     setSubmitError("");
-
     try {
-      const order = await createOrder.mutateAsync({
-        cartId: cart._id,
-        version: cart.version,
-        shippingAddress: {
-          fullName: address.fullName.trim(),
-          phone: address.phone.trim(),
-          addressLine1: address.addressLine1.trim(),
-          addressLine2: address.addressLine2?.trim(),
-          city: address.city.trim(),
-          province: address.province.trim(),
-          postalCode: address.postalCode.trim(),
-        },
-        paymentMethod: "COD",
-      });
-
-      if (submittedToken !== useAuthStore.getState().token) return;
-      navigate(`/orders/${order._id}`, {
-        replace: true,
-      });
-    } catch (error) {
-      setSubmitError(
-        requestErrorMessage(
-          error,
-          "Unable to confirm this order. Check My Orders before placing it again.",
-        ),
+      const order = await submitCheckoutAttempt(
+        userId,
+        payload,
+        createOrder.mutateAsync,
+        () =>
+          useAuthStore.getState().token === submittedToken &&
+          useAuthStore.getState().user?._id === userId,
       );
+      if (!mounted.current || submittedToken !== useAuthStore.getState().token)
+        return;
+      const current = readCheckoutAttempt(userId);
+      if (current) finishCheckoutAttempt(userId, current.key);
+      navigate(`/orders/${order._id}`, { replace: true });
+    } catch (error) {
+      if (mounted.current && submittedToken === useAuthStore.getState().token) {
+        setAttempt(readCheckoutAttempt(userId));
+        setSubmitError(
+          requestErrorMessage(
+            error,
+            "Order status is uncertain. Retry or check this same attempt; do not place another order.",
+          ),
+        );
+      }
     } finally {
       submittingRef.current = false;
+      if (mounted.current) setIsPlacing(false);
     }
   };
+  const checkOrder = async () => {
+    if (!userId || !attempt || submittingRef.current) return;
+    const submittedToken = useAuthStore.getState().token;
+    submittingRef.current = true;
+    setIsPlacing(true);
+    try {
+      const order = await orderService.getCheckoutAttempt(attempt.key);
+      if (!mounted.current || submittedToken !== useAuthStore.getState().token)
+        return;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["cart"] }),
+        queryClient.invalidateQueries({ queryKey: ["orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
+      ]);
+      if (mounted.current && submittedToken === useAuthStore.getState().token) {
+        finishCheckoutAttempt(userId, attempt.key);
+        navigate(`/orders/${order._id}`, { replace: true });
+      }
+    } catch {
+      if (mounted.current && submittedToken === useAuthStore.getState().token)
+        setSubmitError(
+          "No committed order could be confirmed yet. Check this attempt again; its original request may still be processing.",
+        );
+    } finally {
+      submittingRef.current = false;
+      if (mounted.current) setIsPlacing(false);
+    }
+  };
+  const recovery = attempt && (
+    <section
+      aria-label="Checkout recovery"
+      className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5"
+    >
+      <h2 className="font-bold">
+        {attempt.outcome === "failed"
+          ? "Checkout was not completed"
+          : "Check your previous checkout attempt"}
+      </h2>
+      <p className="mt-2 text-sm">
+        {attempt.outcome === "failed"
+          ? "Review your cart and checkout details before retrying."
+          : "Its outcome may be uncertain. Retry the same request or check for the original order. Do not submit a second attempt."}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-3">
+        <button
+          type="button"
+          disabled={isPlacing}
+          onClick={() => void checkOrder()}
+          className="rounded-xl bg-indigo-600 px-4 py-2 text-white disabled:opacity-50"
+        >
+          Check order
+        </button>
+        {userId && checkoutPayload(userId) && (
+          <button
+            type="button"
+            disabled={isPlacing}
+            onClick={() => {
+              const payload = checkoutPayload(userId);
+              if (payload) void placeOrder(payload);
+            }}
+            className="rounded-xl border px-4 py-2 disabled:opacity-50"
+          >
+            Retry same checkout
+          </button>
+        )}
+        {attempt.outcome === "failed" && userId && (
+          <button
+            type="button"
+            disabled={isPlacing}
+            onClick={() => {
+              finishCheckoutAttempt(userId, attempt.key);
+              setAttempt(null);
+              setSubmitError("");
+            }}
+            className="rounded-xl border px-4 py-2 disabled:opacity-50"
+          >
+            Start a new checkout attempt
+          </button>
+        )}
+      </div>
+      {userId && !checkoutPayload(userId) && (
+        <p className="mt-3 text-sm">
+          After refresh, re-enter the original shipping details to retry this
+          same attempt. Shipping addresses are not stored in browser storage.
+        </p>
+      )}
+      {submitError && (
+        <p role="alert" className="mt-3 text-sm text-red-700">
+          {submitError}
+        </p>
+      )}
+    </section>
+  );
 
   const inputClass = (field: AddressField) =>
     `w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900
@@ -204,6 +342,16 @@ const CheckoutPage = () => {
          ? "border-red-400 focus:border-red-500 focus:ring-red-50"
          : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-50"
      }`;
+
+  if (attempt && (isLoading || isError || items.length === 0))
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-12">
+        {recovery}
+        <Link to="/orders" className="font-semibold text-indigo-700">
+          View My Orders
+        </Link>
+      </main>
+    );
 
   if (isLoading) {
     return (
@@ -269,6 +417,7 @@ const CheckoutPage = () => {
   return (
     <main className="min-h-screen bg-slate-50/80 pb-20">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {recovery}
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -668,6 +817,7 @@ const CheckoutPage = () => {
                 <button
                   type="submit"
                   disabled={
+                    isPlacing ||
                     createOrder.isPending ||
                     unavailable ||
                     isUpdating ||
@@ -675,7 +825,7 @@ const CheckoutPage = () => {
                   }
                   className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-4 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {createOrder.isPending ? (
+                  {isPlacing || createOrder.isPending ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Placing your order...
