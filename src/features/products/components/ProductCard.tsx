@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import type { Product } from "../services/productService";
 import {
   formatPrice,
@@ -12,6 +12,8 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
+  const location = useLocation();
+  const returnTo = location.pathname + location.search;
   const image = getPrimaryImage(product);
   const discount = getDiscountPercentage(product);
   const outOfStock = product.stock === 0;
@@ -20,6 +22,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
     <article className="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <Link
         to={`/products/${product._id}`}
+        state={{ returnTo }}
         className="relative block overflow-hidden bg-gray-100"
       >
         {image ? (
@@ -53,7 +56,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           {product.category}
         </p>
 
-        <Link to={`/products/${product._id}`}>
+        <Link to={`/products/${product._id}`} state={{ returnTo }}>
           <h3 className="mt-2 line-clamp-2 min-h-12 text-lg font-semibold text-gray-900 hover:text-indigo-600">
             {product.name}
           </h3>
@@ -95,6 +98,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
         <Link
           to={`/products/${product._id}`}
+          state={{ returnTo }}
           className="mt-5 block rounded-xl bg-indigo-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-indigo-700"
         >
           View Details

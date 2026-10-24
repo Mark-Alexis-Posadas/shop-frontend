@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useLocation } from "react-router-dom";
 
 import { useProduct } from "../hooks/useProducts";
 import { useCart } from "../../cart/hooks/useCart";
@@ -12,6 +12,13 @@ import {
 
 const ProductDetailPage = () => {
   const { productId = "" } = useParams();
+  const location = useLocation();
+  const candidate: unknown = location.state?.returnTo;
+  const returnTo =
+    typeof candidate === "string" &&
+    /^(?:\/products|\/)(?:\?.*)?$/.test(candidate)
+      ? candidate
+      : "/products";
 
   const { data: product, isPending, isError, refetch } = useProduct(productId);
 
@@ -81,7 +88,7 @@ const ProductDetailPage = () => {
   return (
     <main className="mx-auto max-w-7xl px-6 py-10">
       <div className="mb-8 text-sm text-gray-500">
-        <Link to="/products" className="hover:text-indigo-600">
+        <Link to={returnTo} className="hover:text-indigo-600">
           Products
         </Link>
         <span className="mx-2">/</span>
