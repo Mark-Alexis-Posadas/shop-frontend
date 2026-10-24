@@ -1,4 +1,10 @@
-import { Link } from "react-router-dom";
+import {
+  orderStatuses,
+  paymentStatuses,
+  readOrderFilters,
+  updateOrderParams,
+} from "../utils/orderFilters";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   CalendarDays,
@@ -44,6 +50,7 @@ const formatStatus = (status: string): string =>
   status.charAt(0).toUpperCase() + status.slice(1);
 
 const OrderCard = ({ order }: { order: Order }) => {
+  const location = useLocation();
   const totalQuantity = order.items.reduce(
     (sum, item) => sum + item.quantity,
     0,
@@ -146,6 +153,7 @@ const OrderCard = ({ order }: { order: Order }) => {
 
         <Link
           to={`/orders/${order._id}`}
+          state={{ returnTo: location.pathname + location.search }}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-700"
         >
           View Details
@@ -157,80 +165,26 @@ const OrderCard = ({ order }: { order: Order }) => {
 };
 
 const MyOrdersPage = () => {
-  const {
-    data: orders = [],
-    isLoading,
-    isError,
-    isFetching,
-    refetch,
-  } = useMyOrders();
-
-  if (isLoading) {
-    return (
-      <main className="flex min-h-[65vh] items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-10 w-10 animate-spin text-indigo-600" />
-          <p className="mt-4 text-sm text-slate-500">Loading your orders...</p>
-        </div>
-      </main>
-    );
-  }
-
-  if (isError) {
-    return (
-      <main className="flex min-h-[65vh] items-center justify-center bg-slate-50 px-4">
-        <div className="max-w-md text-center">
-          <Package className="mx-auto h-14 w-14 text-slate-300" />
-
-          <h1 className="mt-5 text-2xl font-bold text-slate-900">
-            Unable to load orders
-          </h1>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Something went wrong while fetching your order history.
-          </p>
-
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Try Again
-          </button>
-        </div>
-      </main>
-    );
-  }
-
-  if (orders.length === 0) {
-    return (
-      <main className="flex min-h-[65vh] items-center justify-center bg-slate-50 px-4">
-        <div className="max-w-md text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-indigo-50">
-            <ShoppingBag className="h-10 w-10 text-indigo-500" />
-          </div>
-
-          <h1 className="mt-6 text-2xl font-extrabold text-slate-900">
-            No orders yet
-          </h1>
-
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            Your order history will appear here once you place your first order.
-          </p>
-
-          <Link
-            to="/products"
-            className="mt-7 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-indigo-700"
-          >
-            Start Shopping
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
+  const [params, setParams] = useSearchParams();
+  const { filters, error } = readOrderFilters(params);
+  const { data, isLoading, isError, isFetching, refetch } = useMyOrders(
+    filters,
+    !error,
+  );
+  const orders = data?.items ?? [];
+  const change = (changes: Record<string, string>) =>
+    setParams((current) => updateOrderParams(current, changes));
+  const totalPages = data?.totalPages ?? 0;
+  const lastPage = Math.min(
+    totalPages,
+    10000,
+    Math.floor(10000 / filters.limit) + 1,
+  );
+  const pages = Array.from(
+    new Set([1, filters.page - 1, filters.page, filters.page + 1, lastPage]),
+  )
+    .filter((page) => page >= 1 && page <= lastPage)
+    .sort((a, b) => a - b);
   const totalSpent = orders
     .filter((order) => order.orderStatus !== "cancelled")
     .reduce((sum, order) => sum + order.total, 0);
@@ -261,7 +215,7 @@ const MyOrdersPage = () => {
           <button
             type="button"
             onClick={() => void refetch()}
-            disabled={isFetching}
+            disabled={isFetching || Boolean(error)}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-600 disabled:opacity-50"
           >
             <RefreshCw
@@ -271,65 +225,204 @@ const MyOrdersPage = () => {
           </button>
         </div>
 
-        {/* Summary */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50">
-              <ShoppingBag className="h-5 w-5 text-indigo-600" />
+        <div className="mb-6 grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="text-sm font-semibold text-slate-700">
+            Order status
+            <select
+              value={filters.orderStatus}
+              onChange={(event) => change({ orderStatus: event.target.value })}
+              className="mt-2 w-full rounded-xl border border-slate-300 p-2.5 focus:outline-indigo-500"
+            >
+              <option value="">All statuses</option>
+              {orderStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {formatStatus(status)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-semibold text-slate-700">
+            Payment status
+            <select
+              value={filters.paymentStatus}
+              onChange={(event) =>
+                change({ paymentStatus: event.target.value })
+              }
+              className="mt-2 w-full rounded-xl border border-slate-300 p-2.5 focus:outline-indigo-500"
+            >
+              <option value="">All payments</option>
+              {paymentStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {formatStatus(status)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm font-semibold text-slate-700">
+            Sort by
+            <select
+              value={filters.sort}
+              onChange={(event) => change({ sort: event.target.value })}
+              className="mt-2 w-full rounded-xl border border-slate-300 p-2.5 focus:outline-indigo-500"
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={() => setParams({})}
+            className="self-end rounded-xl border border-slate-300 px-4 py-2.5 font-semibold text-indigo-700 focus-visible:outline-2"
+          >
+            Reset Filters
+          </button>
+        </div>
+        {error && (
+          <p role="alert" className="mb-6 text-red-700">
+            {error}
+          </p>
+        )}
+        {!error && isLoading && (
+          <p role="status" className="mb-6 flex items-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Loading your orders...
+          </p>
+        )}
+        {!error && isError && (
+          <div role="alert" className="mb-6">
+            <p className="text-red-700">Unable to load orders.</p>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="mt-3 rounded-xl bg-indigo-600 px-4 py-2 text-white"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+        {!error && !isLoading && !isError && (
+          <>
+            {orders.length === 0 && (
+              <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-6">
+                <h2 className="text-lg font-bold">No orders on this page</h2>
+                <p className="mt-2 text-slate-600">
+                  No orders match this page and filters. Reset filters or choose
+                  an earlier page.
+                </p>
+                <Link
+                  to="/products"
+                  className="mt-4 inline-flex items-center gap-2 text-indigo-700"
+                >
+                  Start Shopping
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            )}
+            {/* Summary */}
+            <div className="mb-8 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50">
+                  <ShoppingBag className="h-5 w-5 text-indigo-600" />
+                </div>
+
+                <p className="text-sm text-slate-500">Matching Orders</p>
+                <p className="mt-1 text-2xl font-extrabold text-slate-900">
+                  {data?.total ?? 0}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
+                  <Clock3 className="h-5 w-5 text-amber-600" />
+                </div>
+
+                <p className="text-sm text-slate-500">Pending on This Page</p>
+                <p className="mt-1 text-2xl font-extrabold text-slate-900">
+                  {pendingOrders}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
+                  <Truck className="h-5 w-5 text-emerald-600" />
+                </div>
+
+                <p className="text-sm text-slate-500">
+                  Page Value (Excl. Cancelled)
+                </p>
+                <p className="mt-1 text-2xl font-extrabold text-slate-900">
+                  {formatCurrency(totalSpent)}
+                </p>
+              </div>
             </div>
 
-            <p className="text-sm text-slate-500">Total Orders</p>
-            <p className="mt-1 text-2xl font-extrabold text-slate-900">
-              {orders.length}
-            </p>
-          </div>
+            {/* Order list */}
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">
+                Order History
+              </h2>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
-              <Clock3 className="h-5 w-5 text-amber-600" />
+              <span
+                role="status"
+                aria-live="polite"
+                className="text-sm text-slate-500"
+              >
+                {data?.total ?? 0} matching orders | Page {filters.page} of{" "}
+                {Math.max(1, totalPages)}
+              </span>
             </div>
 
-            <p className="text-sm text-slate-500">Pending Orders</p>
-            <p className="mt-1 text-2xl font-extrabold text-slate-900">
-              {pendingOrders}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
-              <Truck className="h-5 w-5 text-emerald-600" />
+            <div className="space-y-5" aria-busy={isFetching}>
+              {orders.map((order) => (
+                <OrderCard key={order._id} order={order} />
+              ))}
             </div>
-
-            <p className="text-sm text-slate-500">
-              Order Value (Excl. Cancelled)
-            </p>
-            <p className="mt-1 text-2xl font-extrabold text-slate-900">
-              {formatCurrency(totalSpent)}
-            </p>
-          </div>
-        </div>
-
-        {/* Order list */}
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900">Order History</h2>
-
-          <span className="text-sm text-slate-500">
-            {orders.length} order
-            {orders.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-
-        <div className="space-y-5">
-          {[...orders]
-            .sort(
-              (a, b) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime(),
-            )
-            .map((order) => (
-              <OrderCard key={order._id} order={order} />
-            ))}
-        </div>
+            {totalPages > lastPage && (
+              <p className="mt-5 text-sm text-slate-600">
+                Narrow your filters to browse beyond the first 10,000 results.
+              </p>
+            )}
+            {totalPages > 0 && (
+              <nav
+                aria-label="Order pages"
+                className="mt-6 flex flex-wrap justify-center gap-2"
+              >
+                <button
+                  type="button"
+                  disabled={filters.page <= 1}
+                  onClick={() => change({ page: String(filters.page - 1) })}
+                  className="rounded-lg border px-3 py-2 disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                {pages.map((page, index) => (
+                  <span key={page} className="inline-flex items-center gap-2">
+                    {index > 0 && page - pages[index - 1] > 1 && (
+                      <span aria-hidden="true">...</span>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={`Go to page ${page}`}
+                      aria-current={page === filters.page ? "page" : undefined}
+                      onClick={() => change({ page: String(page) })}
+                      className={`rounded-lg border px-3 py-2 ${page === filters.page ? "bg-indigo-600 text-white" : "bg-white"}`}
+                    >
+                      {page}
+                    </button>
+                  </span>
+                ))}
+                <button
+                  type="button"
+                  disabled={filters.page >= lastPage}
+                  onClick={() => change({ page: String(filters.page + 1) })}
+                  className="rounded-lg border px-3 py-2 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </nav>
+            )}
+          </>
+        )}
       </div>
     </main>
   );

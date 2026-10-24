@@ -1,6 +1,11 @@
+import type { OrderFilters } from "../utils/orderFilters";
 import { api } from "../../../shared/lib/api";
 
-import type { CreateOrderPayload, Order } from "../types/order.types";
+import type {
+  CreateOrderPayload,
+  Order,
+  OrderPage,
+} from "../types/order.types";
 
 export const orderService = {
   cancelOrder: async (orderId: string): Promise<Order> => {
@@ -14,8 +19,14 @@ export const orderService = {
     return data;
   },
 
-  getMyOrders: async (): Promise<Order[]> => {
-    const { data } = await api.get<Order[]>("/orders/my");
+  getMyOrders: async (
+    filters: OrderFilters,
+    signal?: AbortSignal,
+  ): Promise<OrderPage> => {
+    const params = Object.fromEntries(
+      Object.entries(filters).filter(([, value]) => value !== ""),
+    );
+    const { data } = await api.get<OrderPage>("/orders/my", { params, signal });
     return data;
   },
 

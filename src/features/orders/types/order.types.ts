@@ -43,3 +43,11 @@ export interface CreateOrderPayload {
   shippingAddress: ShippingAddress;
   paymentMethod: "COD";
 }
+
+export interface OrderPage {
+  items: Order[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}

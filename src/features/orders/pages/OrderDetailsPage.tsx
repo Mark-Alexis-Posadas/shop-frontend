@@ -1,4 +1,5 @@
-import { Link, useParams } from "react-router-dom";
+import { orderHistoryReturnTo } from "../utils/orderFilters";
+import { Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
   ArrowLeft,
@@ -124,6 +125,8 @@ const OrderTimeline = ({ status }: { status: OrderStatus }) => {
 };
 
 const OrderContent = ({ order }: { order: Order }) => {
+  const location = useLocation();
+  const returnTo = orderHistoryReturnTo(location.state);
   const address = order.shippingAddress;
 
   const totalQuantity = order.items.reduce(
@@ -136,7 +139,7 @@ const OrderContent = ({ order }: { order: Order }) => {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <Link
-          to="/orders"
+          to={returnTo}
           className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -374,6 +377,8 @@ const OrderContent = ({ order }: { order: Order }) => {
 
 const OrderDetailsPage = () => {
   const { orderId } = useParams<{ orderId: string }>();
+  const location = useLocation();
+  const returnTo = orderHistoryReturnTo(location.state);
 
   const {
     data: order,
@@ -388,7 +393,7 @@ const OrderDetailsPage = () => {
       <main className="mx-auto max-w-xl px-4 py-24 text-center">
         <h1 className="text-2xl font-bold text-slate-900">Invalid order</h1>
         <Link
-          to="/orders"
+          to={returnTo}
           className="mt-5 inline-block text-sm font-semibold text-indigo-600"
         >
           Back to My Orders
@@ -446,7 +451,7 @@ const OrderDetailsPage = () => {
             )}
 
             <Link
-              to="/orders"
+              to={returnTo}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
               Back to My Orders
@@ -465,7 +470,7 @@ const OrderDetailsPage = () => {
           Order not found
         </h1>
         <Link
-          to="/orders"
+          to={returnTo}
           className="mt-5 inline-block text-sm font-semibold text-indigo-600"
         >
           Back to My Orders

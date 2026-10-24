@@ -1,3 +1,4 @@
+import { myOrdersKey, type OrderFilters } from "../utils/orderFilters";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { orderService } from "../services/orderService";
@@ -35,10 +36,11 @@ export const useCreateOrder = () => {
   });
 };
 
-export const useMyOrders = () => {
+export const useMyOrders = (filters: OrderFilters, enabled = true) => {
   return useQuery({
-    queryKey: ["orders", "my"],
-    queryFn: orderService.getMyOrders,
+    queryKey: myOrdersKey(filters),
+    queryFn: ({ signal }) => orderService.getMyOrders(filters, signal),
+    enabled,
   });
 };
 
