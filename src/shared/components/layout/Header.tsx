@@ -117,6 +117,7 @@ const Header = () => {
               <button
                 type="button"
                 onClick={handleLogout}
+                aria-label="Logout"
                 className="flex items-center gap-2 rounded-xl border border-red-100 px-3 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
               >
                 <LogOut size={17} />

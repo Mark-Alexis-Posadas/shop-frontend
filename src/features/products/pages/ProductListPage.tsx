@@ -44,22 +44,30 @@ const ProductListPage = () => {
     .sort((a, b) => a - b);
   return (
     <>
-      <section className="bg-indigo-950 px-6 py-16 text-white">
-        <div className="mx-auto max-w-7xl">
-          <h1 className="text-4xl font-extrabold md:text-6xl">
-            Discover products you'll love.
-          </h1>
-          <p className="mt-5 text-indigo-100">
-            Shop quality products at great prices.
+      <section className="border-b border-slate-200 bg-white px-5 py-9 sm:px-6 sm:py-12">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">
+              The full collection
+            </p>
+            <h1 className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-slate-950 sm:text-4xl">
+              Find what you’re looking for.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+              Search, sort, and narrow the collection to find the right fit.
+            </p>
+          </div>
+          <p className="shrink-0 text-sm font-medium text-slate-500">
+            Cash on delivery available
           </p>
         </div>
       </section>
       <section
         id="products"
-        className="mx-auto max-w-7xl space-y-6 px-6 py-10"
+        className="mx-auto max-w-7xl space-y-6 px-4 py-7 sm:px-6 sm:py-10"
         aria-label="Product catalog"
       >
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-5">
+        <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <ProductSearch
               value={filters.search}
@@ -131,7 +139,7 @@ const ProductListPage = () => {
               </p>
             )}
             {!isError && data && (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
                 {data.items.map((product) => (
                   <ProductCard key={product._id} product={product} />
                 ))}

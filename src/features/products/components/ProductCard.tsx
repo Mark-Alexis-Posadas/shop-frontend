@@ -20,21 +20,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const outOfStock = product.stock === 0;
 
   return (
-    <article className="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg">
       <Link
         to={`/products/${product._id}`}
         state={{ returnTo }}
-        className="relative block overflow-hidden bg-gray-100"
+        className="relative block aspect-square overflow-hidden bg-slate-50"
       >
         {image ? (
           <ProductImage
             src={image}
             alt={product.name}
             loading="lazy"
-            className="h-60 w-full object-contain p-4 transition duration-300 group-hover:scale-105"
+            className="h-full w-full object-contain p-3 transition duration-300 group-hover:scale-[1.03] sm:p-5"
           />
         ) : (
-          <div className="flex h-60 items-center justify-center text-gray-400">
+          <div className="flex h-full items-center justify-center text-sm text-slate-400">
             No Image Available
           </div>
         )}
@@ -52,55 +52,59 @@ const ProductCard = ({ product }: ProductCardProps) => {
         )}
       </Link>
 
-      <div className="p-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-indigo-600">
+      <div className="flex flex-1 flex-col p-3.5 sm:p-5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-indigo-600 sm:text-xs">
           {product.category}
         </p>
 
         <Link to={`/products/${product._id}`} state={{ returnTo }}>
-          <h3 className="mt-2 line-clamp-2 min-h-12 text-lg font-semibold text-gray-900 hover:text-indigo-600">
+          <h3 className="mt-1.5 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-slate-900 hover:text-indigo-600 sm:mt-2 sm:min-h-12 sm:text-base sm:leading-6">
             {product.name}
           </h3>
         </Link>
 
         {product.brand && (
-          <p className="mt-1 text-sm text-gray-500">{product.brand}</p>
+          <p className="mt-1 truncate text-xs text-slate-500 sm:text-sm">
+            {product.brand}
+          </p>
         )}
 
-        <p className="mt-3 line-clamp-2 text-sm text-gray-500">
+        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500 sm:mt-3 sm:text-sm">
           {product.shortDescription || product.description}
         </p>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-xl font-bold text-gray-900">
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:mt-4 sm:gap-2">
+          <span className="text-base font-bold tracking-tight text-slate-900 sm:text-xl">
             {formatPrice(product.price)}
           </span>
 
           {discount > 0 && product.compareAtPrice != null && (
-            <span className="text-sm text-gray-400 line-through">
+            <span className="text-xs text-slate-400 line-through sm:text-sm">
               {formatPrice(product.compareAtPrice)}
             </span>
           )}
         </div>
 
-        <div className="mt-3">
+        <div className="mt-2 sm:mt-3">
           {outOfStock ? (
-            <span className="text-sm font-medium text-red-600">
+            <span className="text-xs font-semibold text-red-700 sm:text-sm">
               Out of Stock
             </span>
           ) : isLowStock(product) ? (
-            <span className="text-sm font-medium text-orange-600">
+            <span className="text-xs font-semibold text-amber-700 sm:text-sm">
               Only {product.stock} left!
             </span>
           ) : (
-            <span className="text-sm font-medium text-green-600">In Stock</span>
+            <span className="text-xs font-semibold text-emerald-700 sm:text-sm">
+              In Stock
+            </span>
           )}
         </div>
 
         <Link
           to={`/products/${product._id}`}
           state={{ returnTo }}
-          className="mt-5 block rounded-xl bg-indigo-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-indigo-700"
+          className="mt-auto block rounded-xl bg-indigo-600 px-3 py-2.5 text-center text-xs font-semibold text-white transition hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:mt-5 sm:px-4 sm:py-3 sm:text-sm"
         >
           View Details
         </Link>

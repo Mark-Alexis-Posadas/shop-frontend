@@ -4,6 +4,7 @@ import MainLayout from "../shared/components/layout/MainLayout";
 
 // Product Pages
 import ProductListPage from "../features/products/pages/ProductListPage";
+import HomePage from "../features/products/pages/HomePage";
 import ProductDetailPage from "../features/products/pages/ProductDetailPage";
 
 // Auth Pages
@@ -27,7 +28,7 @@ const AppRouter = () => {
     <Routes>
       <Route element={<MainLayout />}>
         {/* Public Routes */}
-        <Route index element={<ProductListPage />} />
+        <Route index element={<HomePage />} />
         <Route path="products" element={<ProductListPage />} />
         <Route path="products/:productId" element={<ProductDetailPage />} />
 
