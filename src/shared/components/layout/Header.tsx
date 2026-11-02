@@ -47,7 +47,11 @@ const Header = () => {
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
         {/* Brand */}
-        <Link to="/" className="flex items-center gap-2.5">
+        <Link
+          to="/"
+          aria-label="ShopSphere home"
+          className="flex items-center gap-2.5 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600"
+        >
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-600/20">
             <ShoppingBag size={20} />
           </span>
@@ -68,9 +72,9 @@ const Header = () => {
               to={item.path}
               end={item.path === "/"}
               className={({ isActive }) =>
-                `relative text-sm font-semibold transition ${
+                `relative rounded-md py-1 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600 ${
                   isActive
-                    ? "text-indigo-600"
+                    ? "text-indigo-700 after:absolute after:-bottom-2 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-indigo-600"
                     : "text-slate-500 hover:text-indigo-600"
                 }`
               }

@@ -214,6 +214,19 @@ export default function LoginPage() {
               </div>
             </div>
 
+            <div className="mt-2 text-right">
+              <Link
+                to="/forgot-password"
+                state={{
+                  from: destination.to,
+                  returnTo: destination.state?.returnTo,
+                }}
+                className="text-sm font-semibold text-indigo-600 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
             {/* API error */}
             {loginMutation.isError && (
               <div

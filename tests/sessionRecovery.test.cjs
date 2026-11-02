@@ -72,6 +72,11 @@ const { useCart } = require("../src/features/cart/hooks/useCart.ts");
 const { useCancelOrder } = require("../src/features/orders/hooks/useOrders.ts");
 const ProtectedRoute =
   require("../src/features/auth/components/ProtectedRoute.tsx").default;
+const LoginPage = require("../src/features/auth/pages/LoginPage.tsx").default;
+const ForgotPasswordPage =
+  require("../src/features/auth/pages/ForgotPasswordPage.tsx").default;
+const ResetPasswordPage =
+  require("../src/features/auth/pages/ResetPasswordPage.tsx").default;
 const ProductDetailPage =
   require("../src/features/products/pages/ProductDetailPage.tsx").default;
 const {
@@ -167,6 +172,32 @@ afterEach(() => {
   for (const c of clients.splice(0)) c.clear();
   auth(null);
   storage.clear();
+});
+
+test("password recovery pages expose accessible inputs, status states, and safe token URL handling", () => {
+  const loginHtml = render(client(), h(LoginPage), "/login");
+  assert.ok(loginHtml.includes('href="/forgot-password"'));
+  assert.ok(loginHtml.includes("Forgot password?"));
+
+  const forgotHtml = render(
+    client(),
+    h(ForgotPasswordPage),
+    "/forgot-password",
+  );
+  assert.ok(forgotHtml.includes('for="recovery-email"'));
+  assert.ok(forgotHtml.includes('type="email"'));
+  assert.ok(forgotHtml.includes("Send reset link"));
+
+  const resetHtml = render(
+    client(),
+    h(ResetPasswordPage),
+    "/reset-password?token=fixture-token",
+  );
+  assert.ok(resetHtml.includes('for="new-password"'));
+  assert.ok(resetHtml.includes('for="confirm-password"'));
+  assert.ok(resetHtml.includes('aria-label="Show password"'));
+  assert.ok(resetHtml.includes("at least 8 characters"));
+  assert.ok(!resetHtml.includes("fixture-token"));
 });
 test("confirmed matching 401 clears credentials and private caches once while preserving product discovery", async () => {
   auth("fixture-A");

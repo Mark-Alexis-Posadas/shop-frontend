@@ -16,6 +16,25 @@ interface AuthResponse {
 }
 
 export const authService = {
+  requestPasswordReset: async (email: string): Promise<{ message: string }> => {
+    const { data } = await api.post<{ message: string }>(
+      "/auth/forgot-password",
+      { email },
+    );
+    return data;
+  },
+
+  resetPassword: async (payload: {
+    token: string;
+    password: string;
+  }): Promise<{ message: string }> => {
+    const { data } = await api.post<{ message: string }>(
+      "/auth/reset-password",
+      payload,
+    );
+    return data;
+  },
+
   login: async (payload: LoginPayload): Promise<AuthResponse> => {
     const { data } = await api.post<AuthResponse>("/auth/login", payload);
     return data;
